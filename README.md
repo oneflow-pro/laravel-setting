@@ -6,6 +6,8 @@
 
 This package allows you to save settings in a more persistent way. You can use the database and/or json file to save your settings. You can also override the Laravel config.
 
+**Supports Laravel 11+ and PHP 8.2+**
+
 * Driver support
 * Helper function
 * Blade directive
@@ -23,8 +25,10 @@ This package allows you to save settings in a more persistent way. You can use t
 Run the following command:
 
 ```bash
-composer require akaunting/laravel-setting
+composer require oneflow-pro/laravel-setting
 ```
+
+> **Note**: This package supports Laravel 11+ with automatic package discovery. No manual registration needed.
 
 ### 2. Register (for Laravel < 5.5)
 
