@@ -2,7 +2,7 @@
 
 use Akaunting\Setting\Support\Arr;
 
-class ArrayUtilityTest extends PHPUnit_Framework_TestCase
+class ArrayUtilTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @test
@@ -13,7 +13,7 @@ class ArrayUtilityTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, Arr::get($data, $key));
     }
 
-    public function getGetData()
+    public static function getGetData()
     {
         return [
             [[], 'foo', null],
@@ -56,7 +56,7 @@ class ArrayUtilityTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, $input);
     }
 
-    public function getSetData()
+    public static function getSetData()
     {
         return [
             [
@@ -102,7 +102,8 @@ class ArrayUtilityTest extends PHPUnit_Framework_TestCase
     public function setThrowsExceptionOnNonArraySegment()
     {
         $data = ['foo' => 'bar'];
-        $this->setExpectedException('UnexpectedValueException', 'Non-array segment encountered');
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Non-array segment encountered');
         Arr::set($data, 'foo.bar', 'baz');
     }
 
@@ -115,7 +116,7 @@ class ArrayUtilityTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($expected, Arr::has($input, $key));
     }
 
-    public function getHasData()
+    public static function getHasData()
     {
         return [
             [[], 'foo', false],

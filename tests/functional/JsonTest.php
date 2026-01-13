@@ -2,6 +2,17 @@
 
 class JsonTest extends AbstractFunctionalTest
 {
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        // Ensure tmp directory exists
+        $tmpDir = dirname(__DIR__) . '/tmp';
+        if (!is_dir($tmpDir)) {
+            mkdir($tmpDir, 0777, true);
+        }
+    }
+
     protected function createStore(array $data = null)
     {
         $path = dirname(__DIR__) . '/tmp/store.json';
@@ -22,7 +33,7 @@ class JsonTest extends AbstractFunctionalTest
         );
     }
 
-    public function tearDown()
+    public function tearDown(): void
     {
         $path = dirname(__DIR__) . '/tmp/store.json';
         unlink($path);

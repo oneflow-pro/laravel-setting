@@ -30,7 +30,7 @@ class Manager extends BaseManager
 
     public function getDefaultDriver()
     {
-        return config('setting.driver');
+        return config('setting.driver', 'database');
     }
 
     public function createJsonDriver()

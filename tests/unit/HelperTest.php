@@ -1,17 +1,51 @@
 <?php
 
 use Illuminate\Container\Container;
+use Illuminate\Config\Repository as ConfigRepository;
 use Mockery as m;
 
-class HelperTest extends PHPUnit_Framework_TestCase
+class HelperTest extends \PHPUnit\Framework\TestCase
 {
     public static $functions;
 
-    public function setUp()
+    public function setUp(): void
     {
         self::$functions = m::mock();
 
-        Container::setInstance(new Container());
+        $container = new Container();
+
+        // Set up config service
+        $config = new ConfigRepository([
+            'setting' => [
+                'driver' => 'memory',
+                'database' => [
+                    'connection' => null,
+                    'table' => 'settings',
+                    'key' => 'key',
+                    'value' => 'value',
+                ],
+                'json' => [
+                    'path' => sys_get_temp_dir() . '/settings.json',
+                ],
+                'cache' => [
+                    'enabled' => false,
+                    'key' => 'setting',
+                    'ttl' => 3600,
+                    'auto_clear' => true,
+                ],
+                'fallback' => [],
+                'override' => [],
+                'required_extra_columns' => [],
+                'encrypted_keys' => [],
+                'auto_save' => false,
+            ]
+        ]);
+
+        $container->singleton('config', function () use ($config) {
+            return $config;
+        });
+
+        Container::setInstance($container);
 
         $store = m::mock('Akaunting\Setting\Contracts\Driver');
 
@@ -29,16 +63,19 @@ class HelperTest extends PHPUnit_Framework_TestCase
     /** @test */
     public function single_parameter_get_a_key_from_store()
     {
-        app('setting')->shouldReceive('get')->with('foo', null)->once();
+        app('setting')->shouldReceive('get')->with('foo', null)->once()->andReturn('value');
 
-        setting('foo');
+        $result = setting('foo');
+        $this->assertEquals('value', $result);
     }
 
+    /** @test */
     public function two_parameters_return_a_default_value()
     {
-        app('setting')->shouldReceive('get')->with('foo', 'bar')->once();
+        app('setting')->shouldReceive('get')->with('foo', 'bar')->once()->andReturn('bar');
 
-        setting('foo', 'bar');
+        $result = setting('foo', 'bar');
+        $this->assertEquals('bar', $result);
     }
 
     /** @test */
@@ -46,6 +83,7 @@ class HelperTest extends PHPUnit_Framework_TestCase
     {
         app('setting')->shouldReceive('set')->with(['foo', 'bar'])->once();
 
-        setting(['foo', 'bar']);
+        $result = setting(['foo', 'bar']);
+        $this->assertInstanceOf('Akaunting\Setting\Contracts\Driver', $result);
     }
 }

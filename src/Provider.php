@@ -23,8 +23,7 @@ class Provider extends ServiceProvider
 
         // Auto save setting
         if (config('setting.auto_save')) {
-            $kernel = $this->app['Illuminate\Contracts\Http\Kernel'];
-            $kernel->pushMiddleware(AutoSaveSetting::class);
+            $this->app['router']->pushMiddlewareToGroup('web', AutoSaveSetting::class);
         }
 
         $this->override();

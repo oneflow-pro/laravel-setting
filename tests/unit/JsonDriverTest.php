@@ -1,10 +1,48 @@
 <?php
 
 use Mockery as m;
+use Illuminate\Config\Repository as ConfigRepository;
 
-class JsonDriverTest extends PHPUnit_Framework_TestCase
+class JsonDriverTest extends \PHPUnit\Framework\TestCase
 {
-    public function tearDown()
+    public function setUp(): void
+    {
+        // Set up config service
+        $config = new ConfigRepository([
+            'setting' => [
+                'driver' => 'json',
+                'database' => [
+                    'connection' => null,
+                    'table' => 'settings',
+                    'key' => 'key',
+                    'value' => 'value',
+                ],
+                'json' => [
+                    'path' => sys_get_temp_dir() . '/settings.json',
+                ],
+                'cache' => [
+                    'enabled' => false,
+                    'key' => 'setting',
+                    'ttl' => 3600,
+                    'auto_clear' => true,
+                ],
+                'fallback' => [],
+                'override' => [],
+                'required_extra_columns' => [],
+                'encrypted_keys' => [],
+                'auto_save' => false,
+            ]
+        ]);
+
+        $container = new \Illuminate\Container\Container();
+        $container->singleton('config', function () use ($config) {
+            return $config;
+        });
+
+        \Illuminate\Container\Container::setInstance($container);
+    }
+
+    public function tearDown(): void
     {
         m::close();
     }

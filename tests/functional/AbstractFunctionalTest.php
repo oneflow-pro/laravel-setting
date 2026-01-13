@@ -1,25 +1,63 @@
 <?php
 
 use Akaunting\Setting\Drivers\Database;
+use Illuminate\Config\Repository as ConfigRepository;
 
-abstract class AbstractFunctionalTest extends PHPUnit_Framework_TestCase
+abstract class AbstractFunctionalTest extends \PHPUnit\Framework\TestCase
 {
-    abstract protected function createStore(array $data = []);
-
-    protected function assertStoreEquals($store, $expected, $message = null)
+    public function setUp(): void
     {
-        $this->assertEquals($expected, $store->all(), $message);
-        $store->save();
-        $store = $this->createStore();
-        $this->assertEquals($expected, $store->all(), $message);
+        // Set up config service for all functional tests
+        $config = new ConfigRepository([
+            'setting' => [
+                'driver' => 'memory',
+                'database' => [
+                    'connection' => null,
+                    'table' => 'settings',
+                    'key' => 'key',
+                    'value' => 'value',
+                ],
+                'json' => [
+                    'path' => sys_get_temp_dir() . '/settings.json',
+                ],
+                'cache' => [
+                    'enabled' => false,
+                    'key' => 'setting',
+                    'ttl' => 3600,
+                    'auto_clear' => true,
+                ],
+                'fallback' => [],
+                'override' => [],
+                'required_extra_columns' => [],
+                'encrypted_keys' => [],
+                'auto_save' => false,
+            ]
+        ]);
+
+        $container = new \Illuminate\Container\Container();
+        $container->singleton('config', function () use ($config) {
+            return $config;
+        });
+
+        \Illuminate\Container\Container::setInstance($container);
     }
 
-    protected function assertStoreKeyEquals($store, $key, $expected, $message = null)
+    abstract protected function createStore(array $data = []);
+
+    protected function assertStoreEquals($store, $expected, $message = '')
     {
-        $this->assertEquals($expected, $store->get($key), $message);
+        $this->assertEquals($expected, $store->all(), $message ?: 'Store data should match expected');
         $store->save();
         $store = $this->createStore();
-        $this->assertEquals($expected, $store->get($key), $message);
+        $this->assertEquals($expected, $store->all(), $message ?: 'Store data should persist after save');
+    }
+
+    protected function assertStoreKeyEquals($store, $key, $expected, $message = '')
+    {
+        $this->assertEquals($expected, $store->get($key), $message ?: 'Store key should match expected');
+        $store->save();
+        $store = $this->createStore();
+        $this->assertEquals($expected, $store->get($key), $message ?: 'Store key should persist after save');
     }
 
     /** @test */
@@ -50,7 +88,8 @@ abstract class AbstractFunctionalTest extends PHPUnit_Framework_TestCase
     {
         $store = $this->createStore();
         $store->set('foo', 'bar');
-        $this->setExpectedException('UnexpectedValueException', 'Non-array segment encountered');
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Non-array segment encountered');
         $store->set('foo.bar', 'baz');
     }
 
