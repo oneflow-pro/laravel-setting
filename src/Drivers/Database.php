@@ -181,7 +181,8 @@ class Database extends Driver
 
             if (isset($insert_data[$key])) {
                 $is_in_insert = true;
-                $is_different_in_db = (string) $insert_data[$key] != (string) $value;
+                // Handle array comparisons for PHP 8.2 compatibility
+                $is_different_in_db = $this->compareValues($insert_data[$key], $value) !== 0;
                 $is_same_as_fallback = $this->isEqualToFallback($key, $insert_data[$key]);
             }
 
@@ -265,6 +266,26 @@ class Database extends Driver
     }
 
     /**
+     * Compare two values safely, handling arrays for PHP 8.2 compatibility.
+     *
+     * @param  mixed $value1
+     * @param  mixed $value2
+     *
+     * @return int Returns 0 if equal, -1 if value1 < value2, 1 if value1 > value2
+     */
+    protected function compareValues($value1, $value2)
+    {
+        // Handle array comparisons
+        if (is_array($value1) || is_array($value2)) {
+            $json1 = json_encode($value1, JSON_UNESCAPED_SLASHES);
+            $json2 = json_encode($value2, JSON_UNESCAPED_SLASHES);
+            return strcmp($json1, $json2);
+        }
+
+        return strcmp((string) $value1, (string) $value2);
+    }
+
+    /**
      * Checks if the provided key should be encrypted or not.
      * Also type casts the given value to a string so errors with booleans or integers are handeled.
      * Otherwise it returns the original value.
@@ -272,14 +293,15 @@ class Database extends Driver
      * @param  string $key   Key to check if it's inside the encryptedValues variable.
      * @param  mixed $value  Info: Encryption only supports strings.
      *
-     * @return string
+     * @return mixed
      */
     protected function prepareValue(string $key, $value)
     {
         // Check if key should be encrypted
         if (in_array($key, $this->encrypted_keys)) {
-            // Cast to string to avoid error when a user passes a boolean value
-            return Crypt::encryptString((string) $value);
+            // JSON encode arrays before encryption for PHP 8.2 compatibility
+            $valueToEncrypt = is_array($value) ? json_encode($value, JSON_UNESCAPED_SLASHES) : (string) $value;
+            return Crypt::encryptString($valueToEncrypt);
         }
 
         return $value;
@@ -292,14 +314,16 @@ class Database extends Driver
      * @param  string $key   Key to check if it's inside the encryptedValues variable.
      * @param  mixed $value  Info: Encryption only supports strings.
      *
-     * @return string
+     * @return mixed
      */
     protected function unpackValue(string $key, $value)
     {
         // Check if key should be encrypted
         if (in_array($key, $this->encrypted_keys)) {
-            // Cast to string to avoid error when a user passes a boolean value
-            return Crypt::decryptString((string) $value);
+            $decrypted = Crypt::decryptString((string) $value);
+            // Try to decode JSON if it was an array
+            $decoded = json_decode($decrypted, true);
+            return json_last_error() === JSON_ERROR_NONE ? $decoded : $decrypted;
         }
 
         return $value;

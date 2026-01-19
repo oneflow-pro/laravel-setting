@@ -85,13 +85,20 @@ abstract class Driver
      * Check if the given value is same as fallback.
      *
      * @param string $key
-     * @param string $value
+     * @param mixed $value
      *
      * @return bool
      */
     public function isEqualToFallback($key, $value)
     {
-        return (string) $this->getFallback($key) == (string) $value;
+        $fallback = $this->getFallback($key);
+        
+        // Handle array comparisons for PHP 8.2 compatibility
+        if (is_array($fallback) || is_array($value)) {
+            return json_encode($fallback, JSON_UNESCAPED_SLASHES) === json_encode($value, JSON_UNESCAPED_SLASHES);
+        }
+        
+        return (string) $fallback == (string) $value;
     }
 
     /**
@@ -290,7 +297,9 @@ abstract class Driver
         $key = config('setting.cache.key');
 
         foreach ($this->getExtraColumns() as $name => $value) {
-            $key .= '_' . $name . '_' . $value;
+            // Handle array values for PHP 8.2 compatibility
+            $valueStr = is_array($value) ? json_encode($value, JSON_UNESCAPED_SLASHES) : (string) $value;
+            $key .= '_' . $name . '_' . $valueStr;
         }
 
         return $key;
